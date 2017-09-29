@@ -47,8 +47,15 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.appindexing.Action;
+import com.google.firebase.appindexing.FirebaseAppIndex;
+import com.google.firebase.appindexing.FirebaseUserActions;
+import com.google.firebase.appindexing.Indexable;
+import com.google.firebase.appindexing.builders.Indexables;
+import com.google.firebase.appindexing.builders.PersonBuilder;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -203,8 +210,7 @@ public class MainActivity extends AppCompatActivity
         // XXX
         // New child entries
         mFirebaseDatabaseReference = FirebaseDatabase.getInstance().getReference();
-        mFirebaseAdapter = new FirebaseRecyclerAdapter<FriendlyMessage,
-                MessageViewHolder>(
+        mFirebaseAdapter = new FirebaseRecyclerAdapter<FriendlyMessage, MessageViewHolder>(
                 FriendlyMessage.class,
                 R.layout.item_message,
                 MessageViewHolder.class,
@@ -260,6 +266,28 @@ public class MainActivity extends AppCompatActivity
                             .into(viewHolder.messengerImageView);
                 }
 
+                // XXX
+                // indexMessage()새 메시지가있을 때마다 전화하십시오 .
+                // for가 동일한 항목으로 채워지는 FriendlyMessage시기를 색인할 수 있습니다.
+                if (friendlyMessage.getText() != null) {
+                    // write this message to the on-device index
+                    // XXX
+                    FirebaseAppIndex.getInstance().update(getMessageIndexable(friendlyMessage));
+                }
+
+                // log a view action on it
+                FirebaseUserActions.getInstance().end(getMessageViewAction(friendlyMessage));
+            }
+
+            // XXX
+            // FirebaseRecyclerAdapter의 parseSnapshot메소드를 오버라이드하여 각각의 고유한 ID를 얻습니다.
+            @Override
+            protected FriendlyMessage parseSnapshot(DataSnapshot snapshot) {
+                FriendlyMessage friendlyMessage = super.parseSnapshot(snapshot);
+                if (friendlyMessage != null) {
+                    friendlyMessage.setId(snapshot.getKey());
+                }
+                return friendlyMessage;
             }
         };
 
@@ -397,5 +425,39 @@ public class MainActivity extends AppCompatActivity
                         }
                     }
                 });
+    }
+
+    // XXX
+    // 색인에 개인 콘텐츠 추가:
+    // 사용자가 기기에서 메시지를 보낼 때마다
+    // 기기에서 Google 앱을 통해 향후 발견을 위해 해당 기기의 기기 색인에 해당 메시지를 추가 할 수 있습니다.
+    private Indexable getMessageIndexable(FriendlyMessage friendlyMessage) {
+        PersonBuilder sender = Indexables.personBuilder()
+                .setIsSelf(mUsername.equals(friendlyMessage.getName()))
+                .setName(friendlyMessage.getName())
+                .setUrl(MESSAGE_URL.concat(friendlyMessage.getId() + "/sender"));
+
+        PersonBuilder recipient = Indexables.personBuilder()
+                .setName(mUsername)
+                .setUrl(MESSAGE_URL.concat(friendlyMessage.getId() + "/recipient"));
+
+        Indexable messageToIndex = Indexables.messageBuilder()
+                .setName(friendlyMessage.getText())
+                .setUrl(MESSAGE_URL.concat(friendlyMessage.getId()))
+                .setSender(sender)
+                .setRecipient(recipient)
+                .build();
+
+        return messageToIndex;
+    }
+
+    // XXX
+    // 사용자 동작 기록
+    // VIEW_ACTION사용자 작업을 기록
+    private Action getMessageViewAction(FriendlyMessage friendlyMessage) {
+        return new Action.Builder(Action.Builder.VIEW_ACTION)
+                .setObject(friendlyMessage.getName(), MESSAGE_URL.concat(friendlyMessage.getId()))
+                .setMetadata(new Action.Metadata.Builder().setUpload(false))
+                .build();
     }
 }
