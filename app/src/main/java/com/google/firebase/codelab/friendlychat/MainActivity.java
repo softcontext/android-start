@@ -62,6 +62,7 @@ import com.google.firebase.appindexing.builders.Indexables;
 import com.google.firebase.appindexing.builders.PersonBuilder;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.crash.FirebaseCrash;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -410,6 +411,11 @@ public class MainActivity extends AppCompatActivity
     public boolean onOptionsItemSelected(MenuItem item) {
         // XXX
         switch (item.getItemId()) {
+            // XXX: Step 15
+            case R.id.crash_menu:
+                FirebaseCrash.logcat(Log.ERROR, TAG, "crash caused");
+                causeCrash();
+                return true;
             // XXX: Step 12
             case R.id.invite_menu:
                 sendInvitation();
@@ -607,5 +613,10 @@ public class MainActivity extends AppCompatActivity
                 .setCallToActionText(getString(R.string.invitation_cta))
                 .build();
         startActivityForResult(intent, REQUEST_INVITE);
+    }
+
+    // XXX: Step 15
+    private void causeCrash() {
+        throw new NullPointerException("Fake null pointer exception");
     }
 }
