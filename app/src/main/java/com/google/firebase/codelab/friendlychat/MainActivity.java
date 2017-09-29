@@ -42,6 +42,8 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
 import com.google.android.gms.appinvite.AppInvite;
 import com.google.android.gms.appinvite.AppInviteInvitation;
 import com.google.android.gms.auth.api.Auth;
@@ -128,6 +130,8 @@ public class MainActivity extends AppCompatActivity
     private FirebaseRemoteConfig mFirebaseRemoteConfig;
     // XXX: Step 13
     private FirebaseAnalytics mFirebaseAnalytics;
+    // XXX: Step 14
+    private AdView mAdView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -352,6 +356,11 @@ public class MainActivity extends AppCompatActivity
 
         // XXX: Step 13
         mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
+
+        // XXX: Step 14
+        mAdView = (AdView) findViewById(R.id.adView);
+        AdRequest adRequest = new AdRequest.Builder().build();
+        mAdView.loadAd(adRequest);
     }
 
     @Override
@@ -363,16 +372,30 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onPause() {
+        // XXX: Step 14
+        if (mAdView != null) {
+            mAdView.pause();
+        }
         super.onPause();
     }
 
+    /** Called when returning to the activity */
     @Override
     public void onResume() {
         super.onResume();
+        // XXX: Step 14
+        if (mAdView != null) {
+            mAdView.resume();
+        }
     }
 
+    /** Called before the activity is destroyed */
     @Override
     public void onDestroy() {
+        // XXX: Step 14
+        if (mAdView != null) {
+            mAdView.destroy();
+        }
         super.onDestroy();
     }
 
